@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ConstraintKinds #-}
-module AltGameplay where
+module Gameplay where
 
 import Control.Conditional (ifM)
 import qualified Control.Monad.Writer (WriterT)

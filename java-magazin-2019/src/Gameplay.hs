@@ -42,10 +42,10 @@ data Player =
   }
 
 -- main entry point
-runGame :: [Player] -> IO ()
-runGame players = do
+runGame :: IO [Card] -> [Player] -> IO ()
+runGame getCards players = do
   -- create game state monad on top of IO
-  State.evalStateT (startController players) emptyGameState
+  State.evalStateT (startController getCards players) emptyGameState
 
 type HasGameState m = MonadState GameState m
 
@@ -53,14 +53,14 @@ type GameInterface m = (MonadState GameState m, MonadWriter [GameEvent] m)
 
 type ControllerInterface m = (MonadIO m, MonadState GameState m)
 
-startController :: ControllerInterface m => [Player] -> m ()
-startController players = do
+startController :: ControllerInterface m => IO [Card] -> [Player] -> m ()
+startController getCards players = do
   -- setup game state
   let playerNames = map playerName players
   State.modify (\state -> state { gameStatePlayers = playerNames,
                                   gameStateStacks  = Map.fromList (zip playerNames $ repeat Set.empty)
                                 })
-  shuffledCards <- liftIO $ Shuffle.shuffleRounds 10 Cards.deck
+  shuffledCards <- liftIO getCards
   let hands = Map.fromList (zip playerNames (map Set.fromList (Shuffle.distribute (length playerNames) shuffledCards)))
   gameController players [DealHands hands]
 
@@ -394,4 +394,6 @@ playerAnnette = makePlayer "Annette" playAlongStrategy
 playerNicole = makePlayer "Nicole" playAlongStrategy
 
 start :: IO ()
-start = runGame [playerNicole, playerAnnette, playerPeter, playerMike]
+start =
+  runGame (Shuffle.shuffleRounds 10 Cards.deck)
+          [playerNicole, playerAnnette, playerPeter, playerMike]

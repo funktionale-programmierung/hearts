@@ -39,3 +39,17 @@ The winning player is the one with the fewest penalty points.
 ### Variant: Shooting the moon
 
 A player can also win by taking all penalty points in a deal.
+
+# How to run the program
+
+* Install the [Haskell stack](https://www.haskellstack.org/)
+  version 2.7.1 or later.
+
+* To build the game execute `stack build` in the directory containing
+the file `stack.yaml`. This can take a while, in particular the first
+time.
+
+* To run the game interactively execute `stack run` in the same
+directory. This command will also (re-) build the game if needed.
+
+

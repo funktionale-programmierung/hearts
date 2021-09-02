@@ -56,7 +56,7 @@ legalCard card hand trick =
   containsCard card hand &&
   case trick of
     [] -> True -- if trick is empty, then any card on hand is fine
-    _ -> let (_, firstCard) = last trick
+    _ -> let firstCard = leadingCardOfTrick trick
              firstSuit = suit firstCard
          in  suit card == firstSuit -- ok if suit is followed
              || all ((/= firstSuit) . suit) hand -- ok if no such suit in hand

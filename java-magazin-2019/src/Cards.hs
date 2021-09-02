@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Cards where
 
 import qualified Data.Set as Set
@@ -98,20 +99,26 @@ instance Penalty a => Penalty (Set a) where
 class Pretty a where
   pretty :: a -> String
 
+instance {-# OVERLAPPING #-} Pretty [Char] where
+  pretty s = s
+
 instance Pretty Rank where
   pretty (Numeric i) = show i
-  pretty r = show r
+  pretty r = take 1 (show r)
 
 instance Pretty Suit where
-  pretty s = show s
+  pretty Diamonds = "♦"
+  pretty Clubs = "♣"
+  pretty Spades = "♠"
+  pretty Hearts = "♥"
 
 instance Pretty Card where
-  pretty c = pretty (rank c) ++ " of " ++ pretty (suit c)
+  pretty c = pretty (rank c) ++ pretty (suit c)
 
 instance Pretty a => Pretty [a] where
   pretty [] = ""
   pretty [x] = pretty x
-  pretty (x:xs) = pretty x ++ " and\n" ++ pretty xs
+  pretty (x:xs) = pretty x ++ ", " ++ pretty xs
 
 instance (Pretty a, Pretty b) => Pretty (a, b) where
   pretty (i, x) = pretty i ++ ": " ++ pretty x

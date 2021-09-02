@@ -370,7 +370,7 @@ playInteractive =
     then
       liftIO $ putStrLn "You lead the next trick!"
     else
-      liftIO $ putStrLn ("Cards on table: " ++ show (reverse trick))
+      liftIO $ putStrLn ("Cards on table: " ++ pretty (reverse trick))
   let myhand = Set.elems hand
       ncards = Set.size hand
   liftIO $ putStrLn ("Your hand:")

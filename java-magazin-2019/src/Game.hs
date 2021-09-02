@@ -156,16 +156,23 @@ processGameEvent (TrickTaken player trick) state =
 data PlayerState =
   PlayerState { playerHand  :: Hand,
                 playerTrick :: Trick,
-                playerStack :: [Card] }
+                playerStack :: [Card],
+                playerHistory :: [(PlayerName, Trick)],
+                playerShoots :: Bool
+              }
   deriving Show
 
-emptyPlayerState = PlayerState emptyHand [] []
+emptyPlayerState = PlayerState {
+  playerHand = emptyHand,
+  playerTrick = emptyTrick,
+  playerStack = [],
+  playerHistory = [],
+  playerShoots = False
+  }
 
 playerProcessGameEvent :: PlayerName -> GameEvent -> PlayerState -> PlayerState
 playerProcessGameEvent playerName (HandsDealt hands) state =
-  PlayerState { playerHand = hands ! playerName,
-                playerTrick = emptyTrick,
-                playerStack = [] }
+  emptyPlayerState { playerHand = hands ! playerName }
 playerProcessGameEvent playerName (PlayerTurn playerName') state = state
 playerProcessGameEvent playerName (CardPlayed player card) state
   | player == playerName =
@@ -176,9 +183,11 @@ playerProcessGameEvent playerName (CardPlayed player card) state
 playerProcessGameEvent playerName (TrickTaken player trick) state
   | player == playerName =
     state { playerTrick = emptyTrick,
-            playerStack = (cardsOfTrick trick) ++ (playerStack state) }
+            playerStack = (cardsOfTrick trick) ++ (playerStack state),
+            playerHistory = (player, trick) : playerHistory state }
   | otherwise =
-    state { playerTrick = emptyTrick }
+    state { playerTrick = emptyTrick,
+            playerHistory = (player, trick) : playerHistory state }
 
 processGameCommand :: GameCommand -> GameState -> (GameState, [GameEvent])
 processGameCommand command state | trace ("processGameCommand " ++ show (gameAtBeginning state) ++ " " ++ show command ++ " " ++ show state) False = undefined

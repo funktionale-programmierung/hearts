@@ -233,14 +233,13 @@ type HasPlayerState m = MonadState PlayerState m
 modifyHand  f = State.modify (\playerState -> playerState { playerHand = f (playerHand playerState)})
 modifyTrick f = State.modify (\playerState -> playerState { playerTrick = f (playerTrick playerState)})
 modifyStack f = State.modify (\playerState -> playerState { playerStack = f (playerStack playerState)})
+modifyHistory f = State.modify (\playerState -> playerState { playerHistory = f (playerHistory playerState)})
 
 playerProcessGameEventM :: (HasPlayerState m, PlayerInterface m) => PlayerName -> GameEvent -> m ()
 playerProcessGameEventM playerName gameEvent = do
   case gameEvent of
     HandsDealt hands ->
-      State.put (PlayerState { playerHand = hands ! playerName,
-                               playerTrick = emptyTrick,
-                               playerStack = [] })
+      State.put (emptyPlayerState { playerHand = hands ! playerName })
 
     PlayerTurn turnPlayerName ->
       return ()
@@ -254,6 +253,7 @@ playerProcessGameEventM playerName gameEvent = do
       when (playerName == trickPlayerName) $
         modifyStack (cardsOfTrick trick ++)
       modifyTrick (const emptyTrick)
+      modifyHistory ((trickPlayerName, trick) :)
 
     IllegalMove playerName ->
       return ()

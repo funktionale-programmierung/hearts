@@ -3,6 +3,7 @@ module Main where
 import qualified Gameplay as G
 import qualified Shuffle
 import qualified Cards
+import qualified MyStrategy as S
 
 main :: IO ()
 main = start

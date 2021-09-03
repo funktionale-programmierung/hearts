@@ -342,6 +342,26 @@ playAlongStrategy =
         Just card ->
           return card           -- otherwise use the minimal following card
 
+-- robo player that goes for the moon
+shootTheMoonStrategy :: PlayerStrategy
+shootTheMoonStrategy =
+  PlayerStrategy $ do
+  playerState <- State.get
+  let trick = playerTrick playerState
+      hand = playerHand playerState
+      firstCard = leadingCardOfTrick trick
+      firstSuit = suit firstCard
+      followingCardsOnHand = Set.filter ((== firstSuit) . suit) hand
+  if trickEmpty trick 
+    then
+      return (Set.findMin hand)
+    else
+      case Set.lookupMin followingCardsOnHand of
+        Nothing ->
+          return (Set.findMax hand) -- any card is fine, so try to get rid of high hearts
+        Just card ->
+          return card           -- otherwise use the minimal following card
+
 playAlongCard' :: (HasPlayerState m, MonadIO m) => m Card
 playAlongCard' =
  do
@@ -375,7 +395,7 @@ playInteractive =
       liftIO $ putStrLn ("Cards on table:\n  " ++ pretty (reverse trick))
   let myhand = Set.elems hand
       ncards = Set.size hand
-      legalCards = filter (\c -> legalCard c hand trick) myhand
+      legalCards = filter (legalCard hand trick) myhand
       nLegals = length legalCards
   liftIO $ putStrLn ("Your hand: " ++ pretty myhand)
   if nLegals == 1 then do

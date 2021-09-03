@@ -51,8 +51,8 @@ whoTakesTrick trick =
   in loop player0 card0 rest
 
 -- |is it legal to play card given the hand and the partial trick on the table?
-legalCard :: Card -> Hand -> Trick -> Bool
-legalCard card hand trick =
+legalCard :: Hand -> Trick -> Card -> Bool
+legalCard hand trick card =
   containsCard card hand &&
   case trick of
     [] -> True -- if trick is empty, then any card on hand is fine
@@ -101,7 +101,7 @@ playValid gameState playerName card =
   let hand = gameStateHands gameState ! playerName
       trick = gameStateTrick gameState
   in
-  legalCard card hand trick &&
+  legalCard hand trick card &&
   if gameAtBeginning gameState
   then card == twoOfClubs
   else nextPlayer gameState == playerName

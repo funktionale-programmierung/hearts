@@ -119,7 +119,7 @@ announceEvent (GameOver) = do
   liftIO $ mapM_ stackInfo (Map.assocs playerPenalties)
   liftIO $ putStrLn (loserName ++ message)
 announceEvent gameEvent =
-  liftIO $ putStrLn (show gameEvent)
+  liftIO $ putStrLn (take 10 $ show gameEvent)
 
 gameController :: ControllerInterface m => [Player] -> [GameCommand] -> m ()
 gameController players commands = do
@@ -165,32 +165,6 @@ processGameCommandM' (PlayCard playerName card) =
         do nextPlayer <- nextPlayerM
            processAndPublishEventM (IllegalMove nextPlayer)
            processAndPublishEventM (PlayerTurn nextPlayer)
-
-elseM = id
-
--- fully monadicized version
-processGameCommandM'' :: GameInterface m => GameCommand -> m ()
-processGameCommandM'' (DealHands playerHands) =
-  processAndPublishEventM (HandsDealt playerHands)
-processGameCommandM'' (PlayCard playerName card) =
-  ifM (playValidM playerName card)
-    (do
-      processAndPublishEventM (CardPlayed playerName card)
-      ifM turnOverM
-        (do
-          trick <- currentTrickM
-          let trickTaker = whoTakesTrick trick
-          processAndPublishEventM (TrickTaken trickTaker trick)
-          ifM gameOverM
-            (processAndPublishEventM (GameOver))
-            (processAndPublishEventM (PlayerTurn trickTaker)))
-       (do                     -- not turnOver
-         nextPlayer <- nextPlayerM
-         processAndPublishEventM (PlayerTurn nextPlayer)))
-    (do                        -- not playValid
-      nextPlayer <- nextPlayerM
-      processAndPublishEventM (IllegalMove nextPlayer)
-      processAndPublishEventM (PlayerTurn nextPlayer))
 
 
 processAndPublishEventM :: GameInterface m => GameEvent -> m ()
@@ -297,31 +271,6 @@ strategyPlayer playerName strategy playerState =
 
     return (strategyPlayer playerName strategy nextPlayerState)
 
-playAlongProcessEventM :: (MonadState PlayerState m, PlayerInterface m) => PlayerName -> GameEvent -> m ()
-playAlongProcessEventM playerName event =
-  do playerProcessGameEventM playerName event
-     playerState <- State.get
-     case event of
-       HandsDealt _ ->
-         if Set.member twoOfClubs (playerHand playerState)
-         then Writer.tell [PlayCard playerName twoOfClubs]
-         else return ()
-
-       PlayerTurn turnPlayerName ->
-         if playerName == turnPlayerName
-         then do card <- playAlongCard'
-                 Writer.tell [PlayCard playerName card]
-         else  return ()
-
-       _ -> return ()
-
-playAlongPlayer :: PlayerName -> PlayerState -> Player
-playAlongPlayer playerName playerState =
-  let nextPlayerM event =
-        do nextPlayerState <- State.execStateT (playAlongProcessEventM playerName event) playerState
-           return (playAlongPlayer playerName nextPlayerState)
-  in Player playerName nextPlayerM
-
 -- stupid robo player
 playAlongStrategy :: PlayerStrategy
 playAlongStrategy =
@@ -374,24 +323,6 @@ shootTheMoonStrategy =
         else
           return $ Set.findMin legalCards
 
-playAlongCard' :: (HasPlayerState m, MonadIO m) => m Card
-playAlongCard' =
- do
-  playerState <- State.get
-  let trick = playerTrick playerState
-      hand = playerHand playerState
-      firstCard = leadingCardOfTrick trick
-      firstSuit = suit firstCard
-      followingCardsOnHand = Set.filter ((== firstSuit) . suit) hand
-  if trickEmpty trick 
-    then
-      return (Set.findMin hand)
-    else
-      case Set.lookupMin followingCardsOnHand of
-        Nothing ->
-          return (Set.findMax hand) -- any card is fine, so try to get rid of high hearts
-        Just card ->
-          return card           -- otherwise use the minimal following card
 
 -- |interactive player
 playInteractive :: PlayerStrategy
@@ -419,12 +350,3 @@ playInteractive =
     selected <- liftIO $ getNumber (1,nLegals)
     return (legalCards !! (selected - 1))
 
-playerMike = makePlayer "Mike" playAlongStrategy
-playerPeter = makePlayer "Peter" playInteractive
-playerAnnette = makePlayer "Annette" playAlongStrategy
-playerNicole = makePlayer "Nicole" shootTheMoonStrategy
-
-start :: IO ()
-start =
-  runGame (Shuffle.shuffleRounds 10 Cards.deck)
-          [playerNicole, playerAnnette, playerPeter, playerMike]

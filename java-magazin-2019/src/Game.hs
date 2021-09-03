@@ -50,6 +50,10 @@ whoTakesTrick trick =
       (player0, card0) : rest = reverse trick
   in loop player0 card0 rest
 
+trickContains :: (Card -> Bool) -> Trick -> Bool
+trickContains p trick =
+  any p (cardsOfTrick trick)
+
 -- |is it legal to play card given the hand and the partial trick on the table?
 legalCard :: Hand -> Trick -> Card -> Bool
 legalCard hand trick card =

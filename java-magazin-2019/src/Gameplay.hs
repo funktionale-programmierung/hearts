@@ -96,7 +96,7 @@ announceEvent (PlayerTurn playerName) =
 announceEvent (CardPlayed playerName card) =
   liftIO $ putStrLn (playerName ++ " plays " ++ pretty card)
 announceEvent (TrickTaken playerName trick) =
-  liftIO $ putStrLn (playerName ++ " takes the trick:\n" ++ pretty (cardsOfTrick trick))
+  liftIO $ putStrLn (playerName ++ " takes the trick:\n" ++ pretty (cardsOfTrick trick) ++ "\n")
 announceEvent (IllegalMove playerName) =
   liftIO $ putStrLn (playerName ++ " tried to play an illegal card")
 announceEvent (GameOver) = do
@@ -349,18 +349,30 @@ shootTheMoonStrategy =
   playerState <- State.get
   let trick = playerTrick playerState
       hand = playerHand playerState
+      legalCards = Set.filter (legalCard hand trick) hand
+      highestCard = Set.findMax legalCards
+      mHighestHeart = Set.lookupMax $ Set.filter ((== Hearts) . suit) legalCards
+
       firstCard = leadingCardOfTrick trick
       firstSuit = suit firstCard
-      followingCardsOnHand = Set.filter ((== firstSuit) . suit) hand
+      firstRank = rank firstCard
+
   if trickEmpty trick 
     then
-      return (Set.findMin hand)
+      -- play a scoring card if no other player can best it
+      case mHighestHeart of
+        Just highHeartCard | rank highHeartCard >= Queen -> return highHeartCard
+        _ -> return highestCard
     else
-      case Set.lookupMin followingCardsOnHand of
-        Nothing ->
-          return (Set.findMax hand) -- any card is fine, so try to get rid of high hearts
-        Just card ->
-          return card           -- otherwise use the minimal following card
+      if firstSuit == Hearts then
+        case mHighestHeart of
+          Just highHeartCard | rank highHeartCard > firstRank -> return highHeartCard
+          _ -> return (Set.findMin legalCards)
+      else
+        if trickContains ((== Hearts) . suit) trick then
+          return $ Set.findMax legalCards
+        else
+          return $ Set.findMin legalCards
 
 playAlongCard' :: (HasPlayerState m, MonadIO m) => m Card
 playAlongCard' =
@@ -397,13 +409,12 @@ playInteractive =
       ncards = Set.size hand
       legalCards = filter (legalCard hand trick) myhand
       nLegals = length legalCards
-  liftIO $ putStrLn ("Your hand: " ++ pretty myhand)
+  liftIO $ putStrLn ("Your hand:\n  " ++ pretty myhand)
   if nLegals == 1 then do
     liftIO $ putStrLn ("You have no choice.")
     return (head legalCards)
    else do
-    liftIO $ putStrLn ("Your choices:")
-    liftIO $ putStrLn (pretty (zip [(1::Integer)..] legalCards))
+    liftIO $ putStrLn ("Your choices:\n  " ++ pretty (zip [(1::Integer)..] legalCards))
     liftIO $ putStrLn ("Pick a card (1-" ++ show nLegals ++ ")")
     selected <- liftIO $ getNumber (1,nLegals)
     return (legalCards !! (selected - 1))
@@ -411,7 +422,7 @@ playInteractive =
 playerMike = makePlayer "Mike" playAlongStrategy
 playerPeter = makePlayer "Peter" playInteractive
 playerAnnette = makePlayer "Annette" playAlongStrategy
-playerNicole = makePlayer "Nicole" playAlongStrategy
+playerNicole = makePlayer "Nicole" shootTheMoonStrategy
 
 start :: IO ()
 start =

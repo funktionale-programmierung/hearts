@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Peter Thiemann, Mike Sperber
 maintainer:          peter.thiemann@gmail.com
-copyright:           2018 Peter Thiemann
+copyright:           2018, 2021 Peter Thiemann
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
@@ -16,7 +16,7 @@ extra-source-files:  README.md
 executable hearts
   hs-source-dirs:      src
   main-is:             Main.hs
-  other-modules:       Cards Game Shuffle Gameplay
+  other-modules:       Cards Game Shuffle Gameplay MyStrategy
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
                        , random, transformers, mtl, containers, free, cond

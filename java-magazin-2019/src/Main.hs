@@ -8,7 +8,7 @@ import qualified MyStrategy as S
 main :: IO ()
 main = start
 
-playerMike = G.makePlayer "Mike" G.playAlongStrategy
+playerMike = G.makePlayer "Mike" S.strategy
 playerPeter = G.makePlayer "Peter" G.playInteractive
 playerAnnette = G.makePlayer "Annette" G.playAlongStrategy
 playerNicole = G.makePlayer "Nicole" G.shootTheMoonStrategy

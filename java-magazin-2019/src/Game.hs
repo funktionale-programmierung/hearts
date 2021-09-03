@@ -157,11 +157,12 @@ processGameEvent (TrickTaken player trick) state =
                             (addToStack (gameStateStacks state) player (cardsOfTrick trick)),
           gameStateTrick = emptyTrick }
 
+type PlayerHistory = [(PlayerName, Trick)]
 data PlayerState =
   PlayerState { playerHand  :: Hand,
                 playerTrick :: Trick,
                 playerStack :: [Card],
-                playerHistory :: [(PlayerName, Trick)],
+                playerHistory :: PlayerHistory,
                 playerShoots :: Bool
               }
   deriving Show

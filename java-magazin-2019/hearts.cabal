@@ -16,7 +16,8 @@ extra-source-files:  README.md
 executable hearts
   hs-source-dirs:      src
   main-is:             Main.hs
-  other-modules:       Cards Game Shuffle Gameplay MyStrategy
+  other-modules:       Cards Game Shuffle Gameplay MyStrategy Tournament
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
-                       , random, transformers, mtl, containers, free, cond
+                     , random, transformers, mtl, containers, free, cond, split
+                     , optparse-applicative

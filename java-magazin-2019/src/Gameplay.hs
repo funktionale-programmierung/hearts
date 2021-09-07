@@ -41,8 +41,10 @@ data Player =
   , eventProcessor :: forall m . PlayerInterface m => GameEvent -> m Player
   }
 
+type PlayerScore = Map PlayerName Int
+
 -- main entry point
-runGame :: IO [Card] -> [Player] -> IO ()
+runGame :: IO [Card] -> [Player] -> IO PlayerScore
 runGame getCards players = do
   -- create game state monad on top of IO
   State.evalStateT (startController getCards players) emptyGameState
@@ -53,7 +55,7 @@ type GameInterface m = (MonadState GameState m, MonadWriter [GameEvent] m)
 
 type ControllerInterface m = (MonadIO m, MonadState GameState m)
 
-startController :: ControllerInterface m => IO [Card] -> [Player] -> m ()
+startController :: ControllerInterface m => IO [Card] -> [Player] -> m PlayerScore
 startController getCards players = do
   -- setup game state
   let playerNames = map playerName players
@@ -90,6 +92,12 @@ gameOverM =
 runPlayer :: PlayerInterface m => Player -> GameEvent -> m Player
 runPlayer (Player p f) gameEvent = f gameEvent
 
+getPenalties :: HasGameState m => m PlayerScore
+getPenalties = do
+  gameState <- State.get
+  let stacks = gameStateStacks gameState
+  return $ Map.map penalty stacks
+
 announceEvent :: ControllerInterface m => GameEvent -> m ()
 announceEvent (PlayerTurn playerName) =
   liftIO $ putStrLn ("Your turn, " ++ playerName ++ "!")
@@ -101,10 +109,8 @@ announceEvent (IllegalMove playerName) =
   liftIO $ putStrLn (playerName ++ " tried to play an illegal card")
 announceEvent (GameOver) = do
   liftIO $ putStrLn "Game Over"
-  gameState <- State.get
-  let stacks = gameStateStacks gameState
-      playerPenalties = Map.map penalty stacks
-      (loserName, loserPoints) = Map.foldrWithKey (\playerName points (loserName, loserPoints) -> 
+  playerPenalties <- getPenalties
+  let (loserName, loserPoints) = Map.foldrWithKey (\playerName points (loserName, loserPoints) -> 
                                           if points >= loserPoints
                                           then (playerName, points)
                                           else (loserName, loserPoints)
@@ -121,7 +127,7 @@ announceEvent (GameOver) = do
 announceEvent gameEvent =
   liftIO $ putStrLn (take 10 $ show gameEvent)
 
-gameController :: ControllerInterface m => [Player] -> [GameCommand] -> m ()
+gameController :: ControllerInterface m => [Player] -> [GameCommand] -> m PlayerScore
 gameController players commands = do
   -- traceM ("** INCOMING COMMANDS " ++ show commands) 
   events <- Writer.execWriterT $ mapM_ processGameCommandM' commands
@@ -131,8 +137,14 @@ gameController players commands = do
   -- traceM ("** OUTGOING EVENTS " ++ show events)
   (players', commands') <- Writer.runWriterT $ 
     mapM (\player -> Foldable.foldlM runPlayer player events) players
-  unless (null commands') $
+  if not (null commands') then
     gameController players' commands'
+   else do
+    playerPenalties <- getPenalties
+    let shootingTheMoon = not (Map.null (Map.filter (== 26) playerPenalties))
+        playerScore | shootingTheMoon = playerPenalties
+                    | otherwise       = Map.map (26 -) playerPenalties
+    return playerScore
 
 processGameCommandM :: GameInterface m => GameCommand -> m ()
 processGameCommandM command =

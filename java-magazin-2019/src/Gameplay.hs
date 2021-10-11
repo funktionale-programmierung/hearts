@@ -220,12 +220,13 @@ modifyHand  f = State.modify (\playerState -> playerState { playerHand = f (play
 modifyTrick f = State.modify (\playerState -> playerState { playerTrick = f (playerTrick playerState)})
 modifyStack f = State.modify (\playerState -> playerState { playerStack = f (playerStack playerState)})
 modifyHistory f = State.modify (\playerState -> playerState { playerHistory = f (playerHistory playerState)})
+modifyShoots f = State.modify (\playerState -> playerState { playerShoots = f (playerShoots playerState)})
 
 playerProcessGameEventM :: (HasPlayerState m, PlayerInterface m) => PlayerName -> GameEvent -> m ()
 playerProcessGameEventM playerName gameEvent = do
   case gameEvent of
     HandsDealt hands ->
-      State.put (emptyPlayerState { playerHand = hands ! playerName })
+      State.put ((emptyPlayerState playerName) { playerHand = hands ! playerName })
 
     PlayerTurn turnPlayerName ->
       return ()
@@ -251,7 +252,7 @@ playerProcessGameEventM playerName gameEvent = do
 
 makePlayer :: PlayerName -> PlayerStrategy -> Player
 makePlayer playerName strategy =
-  strategyPlayer playerName strategy emptyPlayerState
+  strategyPlayer playerName strategy (emptyPlayerState playerName)
 
 strategyPlayer :: PlayerName -> PlayerStrategy -> PlayerState -> Player
 strategyPlayer playerName strategy playerState =

@@ -17,6 +17,10 @@ executable hearts
   hs-source-dirs:      src
   main-is:             Main.hs
   other-modules:       Cards Game Shuffle Gameplay MyStrategy Tournament
+                       M5108641 M5164530 M5006291 M4336103 M4721608 M4349877 M4925953
+                       M4719482 M5172845 M3915548 M4108569 M4337015 M5252008 M4930156
+                       M5154605 M4724561 M4307546 M4951475
+                       AllStrategies
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
                      , random, transformers, mtl, containers, free, cond, split

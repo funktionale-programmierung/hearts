@@ -8,12 +8,14 @@ import qualified Gameplay as G
 import qualified Shuffle
 import qualified Cards
 import qualified MyStrategy as S
+import qualified AllStrategies as A
 
 import qualified Tournament as T
 
 
 data CmdLineArgs = CmdLineArgs
   { tournament :: Bool,
+    automatic :: Bool,
     rounds :: Int,
     strategicPlayers :: [StrategicPlayers]
   }
@@ -44,6 +46,9 @@ cmdLineArgs = CmdLineArgs
   <$> switch (long "tournament"
               <> short 't'
               <> help "Switch to tournament mode")
+  <*> switch (long "auto"
+             <> short 'a'
+             <> help "Switch to automatic tournament mode")
   <*> option auto
           ( long "rounds"
          <> short 'n'
@@ -67,13 +72,19 @@ go args =
   if not (tournament args) then
     start
   else do
+    putStrLn "Tournament: Tournament mode"
+    putStrLn "Tournament: ==============="
     let createPlayer sp = case sp of
           PlayAlong n -> G.makePlayer n G.playAlongStrategy
           ShootTheMoon n -> G.makePlayer n G.shootTheMoonStrategy
           MyStrategy n -> G.makePlayer n S.strategy
-        players = map createPlayer (strategicPlayers args)
-    scores <- T.start players (rounds args)
-    putStrLn $ show scores
+        getPlayer (n, st) = G.makePlayer n st
+        players | automatic args = map getPlayer A.realStrategies
+                | otherwise = map createPlayer (strategicPlayers args)
+    scores <- (if automatic args then T.full else T.start) players (rounds args)
+    putStrLn "Tournament: FINAL RESULTS"
+    putStrLn "Tournament: ============="
+    mapM_ (putStrLn . ("Tournament: "++) . show) scores
     return ()
 
 --------------------------------------------------------------------------------

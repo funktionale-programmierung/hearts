@@ -36,6 +36,21 @@ cardsOfTrick trick = map snd trick
 addToTrick :: PlayerName -> Card -> Trick -> Trick
 addToTrick playerName card trick = (playerName, card) : trick
 
+-- from Weber_Maurice
+higherCard :: Card -> Card -> Card
+higherCard c1 c2 = if cardBeats c1 c2 then c1 else c2
+
+highestCardOfTrick :: Trick -> Card
+highestCardOfTrick [] = undefined
+highestCardOfTrick trick = 
+  let cards = cardsOfTrick trick
+  in foldr higherCard (leadingCardOfTrick trick) cards
+
+highestCardOfList :: [Card] -> Card
+highestCardOfList [] = undefined
+highestCardOfList cs = foldr higherCard (last cs) cs
+-- end from Weber_Maurice
+
 leadingCardOfTrick :: Trick -> Card
 leadingCardOfTrick trick = snd (last trick)
 
@@ -159,7 +174,8 @@ processGameEvent (TrickTaken player trick) state =
 
 type PlayerHistory = [(PlayerName, Trick)]
 data PlayerState =
-  PlayerState { playerHand  :: Hand,
+  PlayerState { self :: PlayerName, -- Witzke
+                playerHand  :: Hand,
                 playerTrick :: Trick,
                 playerStack :: [Card],
                 playerHistory :: PlayerHistory,
@@ -167,7 +183,8 @@ data PlayerState =
               }
   deriving Show
 
-emptyPlayerState = PlayerState {
+emptyPlayerState name = PlayerState {
+  self = name,
   playerHand = emptyHand,
   playerTrick = emptyTrick,
   playerStack = [],
@@ -177,7 +194,7 @@ emptyPlayerState = PlayerState {
 
 playerProcessGameEvent :: PlayerName -> GameEvent -> PlayerState -> PlayerState
 playerProcessGameEvent playerName (HandsDealt hands) state =
-  emptyPlayerState { playerHand = hands ! playerName }
+  (emptyPlayerState playerName) { playerHand = hands ! playerName }
 playerProcessGameEvent playerName (PlayerTurn playerName') state = state
 playerProcessGameEvent playerName (CardPlayed player card) state
   | player == playerName =
